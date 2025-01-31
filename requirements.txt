@@ -19,3 +19,6 @@ openpyxl  # Pour manipuler des fichiers Excel si nécessaire
 
 # Pour générer des fichiers PDF
 reportlab
+
+# Contient des outils pour les calculs scientifiques, statistiques et d'optimisation.
+scipy
