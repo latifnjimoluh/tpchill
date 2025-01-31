@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, send_file
-from services.HockeyService import HockeyService
+from services.Scraping import Scraping
 from services.VisualizationService import VisualizationService
 from services.DataVisualizationService import DataVisualizationService
 from services.Analysis import DataAnalyzer
@@ -9,8 +9,8 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import os
 
-app = Flask(__name__)
-hockey_service = HockeyService()
+app = Flask(__name__, template_folder='view')
+hockey_service = Scraping()
 visualization_service = VisualizationService()
 datadataVisualization = DataVisualizationService()
 analyzer = DataAnalyzer()

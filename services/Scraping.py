@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-class HockeyService:
+class Scraping:
     def __init__(self):
         self.base_url = "https://www.scrapethissite.com/pages/forms/"
         self.teams = []

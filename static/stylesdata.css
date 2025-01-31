@@ -152,13 +152,14 @@ tr:nth-child(even) {
 tr:hover {
     background-color: #ddd;
 }
-
 /* Pagination */
 .pagination {
     display: flex;
+    flex-wrap: wrap; /* Permet de répartir les boutons sur plusieurs lignes */
     justify-content: center;
     gap: 10px;
     margin-top: 20px;
+    padding: 10px 0; /* Espacement autour de la pagination */
 }
 
 .pagination button {
@@ -169,6 +170,10 @@ tr:hover {
     cursor: pointer;
     border-radius: 4px;
     transition: background-color 0.3s ease, color 0.3s ease;
+    flex: 1 0 5%; /* Permet d'adapter la taille des boutons tout en maintenant 20 boutons par ligne */
+    min-width: 50px; /* Taille minimale des boutons */
+    max-width: 80px; /* Taille maximale des boutons */
+    text-align: center;
 }
 
 .pagination button:hover {
