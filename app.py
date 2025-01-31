@@ -17,25 +17,25 @@ def search():
     team_name = request.args.get('teamName', '').strip()
     print(f"Recherche côté serveur pour l'équipe : {team_name}")
 
-    # Utiliser le service pour rechercher les équipes
-    results = hockey_service.search_team(team_name)
+    # Utiliser la fonction de scraping pour récupérer les données
+    results = hockey_service.scrape_all_pages(team_name)
 
-    # Convertir les objets Team en dictionnaires pour la sérialisation JSON
-    results_dict = [team.to_dict() for team in results]
+    if not results:
+        return jsonify({"error": "Aucune équipe trouvée"}), 404
 
-    return jsonify(results_dict)
+    return jsonify(results)
 
 @app.route('/all')
 def all_teams():
     print("Affichage de toutes les équipes")
+    
+    # Scraper toutes les équipes (sans filtre)
+    all_teams = hockey_service.scrape_all_pages("")
 
-    # Récupérer toutes les équipes
-    all_teams = hockey_service.teams
+    if not all_teams:
+        return jsonify({"error": "Aucune équipe trouvée"}), 404
 
-    # Convertir les objets Team en dictionnaires pour la sérialisation JSON
-    all_teams_dict = [team.to_dict() for team in all_teams]
-
-    return jsonify(all_teams_dict)
+    return jsonify(all_teams)
 
 @app.route('/download')
 def download():
@@ -43,20 +43,15 @@ def download():
     format_type = request.args.get('format', 'csv')  # Par défaut, CSV
     print(f"Téléchargement des données pour l'équipe : {team_name} au format {format_type}")
 
-    if team_name.lower() == 'all':
-        # Récupérer toutes les équipes
-        data = hockey_service.teams
-        filename = f"all_teams.{format_type}"
-    else:
-        # Récupérer les données de l'équipe spécifique
-        data = hockey_service.search_team(team_name)
-        filename = f"{team_name}.{format_type}"
+    data = hockey_service.scrape_all_pages(team_name if team_name.lower() != 'all' else "")
 
-    # Convertir les données en DataFrame Pandas
-    df = pd.DataFrame([team.to_dict() for team in data])
+    if not data:
+        return jsonify({"error": "Aucune donnée trouvée"}), 404
+
+    filename = f"{team_name if team_name != 'all' else 'all_teams'}.{format_type}"
+    df = pd.DataFrame(data)
 
     if format_type == 'csv':
-        # Générer un fichier CSV
         csv_buffer = io.StringIO()
         df.to_csv(csv_buffer, index=False)
         csv_buffer.seek(0)
@@ -68,7 +63,6 @@ def download():
         )
 
     elif format_type == 'xlsx':
-        # Générer un fichier Excel
         excel_buffer = io.BytesIO()
         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
             df.to_excel(writer, index=False)
@@ -81,16 +75,15 @@ def download():
         )
 
     elif format_type == 'pdf':
-        # Générer un fichier PDF
         pdf_buffer = io.BytesIO()
         p = canvas.Canvas(pdf_buffer, pagesize=letter)
-        p.drawString(100, 750, f"Données pour l'équipe : {team_name if team_name != 'all' else 'Toutes les équipes'}")
+        p.drawString(100, 750, f"Données pour : {team_name if team_name != 'all' else 'Toutes les équipes'}")
 
         y = 730
-        for index, row in df.iterrows():
-            p.drawString(100, y, str(row))
+        for _, row in df.iterrows():
+            p.drawString(100, y, f"{row.to_dict()}")
             y -= 20
-            if y < 50:  # Nouvelle page si nécessaire
+            if y < 50:
                 p.showPage()
                 y = 750
 
@@ -103,8 +96,7 @@ def download():
             download_name=filename
         )
 
-    else:
-        return "Format non supporté", 400
+    return jsonify({"error": "Format non supporté"}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080)  # Utilise le port 8080
+    app.run(debug=True, port=8080)
