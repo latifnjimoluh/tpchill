@@ -4,9 +4,14 @@ import pandas as pd
 import io
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+import os
 
 app = Flask(__name__)
 hockey_service = HockeyService()
+
+# Créer le dossier data s'il n'existe pas
+if not os.path.exists('data'):
+    os.makedirs('data')
 
 @app.route('/')
 def home():
@@ -15,7 +20,9 @@ def home():
 @app.route('/search')
 def search():
     team_name = request.args.get('teamName', '').strip()
-    print(f"Recherche côté serveur pour l'équipe : {team_name}")
+    page = int(request.args.get('page', 1))  # Numéro de la page
+    per_page = 10  # Nombre d'éléments par page
+    print(f"Recherche côté serveur pour l'équipe : {team_name}, page {page}")
 
     # Utiliser la fonction de scraping pour récupérer les données
     results = hockey_service.scrape_all_pages(team_name)
@@ -23,19 +30,41 @@ def search():
     if not results:
         return jsonify({"error": "Aucune équipe trouvée"}), 404
 
-    return jsonify(results)
+    # Pagination
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_results = results[start:end]
+
+    return jsonify({
+        "data": paginated_results,
+        "total": len(results),
+        "page": page,
+        "per_page": per_page
+    })
 
 @app.route('/all')
 def all_teams():
-    print("Affichage de toutes les équipes")
-    
+    page = int(request.args.get('page', 1))  # Numéro de la page
+    per_page = 10  # Nombre d'éléments par page
+    print(f"Affichage de toutes les équipes, page {page}")
+
     # Scraper toutes les équipes (sans filtre)
     all_teams = hockey_service.scrape_all_pages("")
 
     if not all_teams:
         return jsonify({"error": "Aucune équipe trouvée"}), 404
 
-    return jsonify(all_teams)
+    # Pagination
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_results = all_teams[start:end]
+
+    return jsonify({
+        "data": paginated_results,
+        "total": len(all_teams),
+        "page": page,
+        "per_page": per_page
+    })
 
 @app.route('/download')
 def download():
@@ -49,31 +78,13 @@ def download():
         return jsonify({"error": "Aucune donnée trouvée"}), 404
 
     filename = f"{team_name if team_name != 'all' else 'all_teams'}.{format_type}"
+    filepath = os.path.join('data', filename)
     df = pd.DataFrame(data)
 
     if format_type == 'csv':
-        csv_buffer = io.StringIO()
-        df.to_csv(csv_buffer, index=False)
-        csv_buffer.seek(0)
-        return send_file(
-            io.BytesIO(csv_buffer.getvalue().encode()),
-            mimetype='text/csv',
-            as_attachment=True,
-            download_name=filename
-        )
-
+        df.to_csv(filepath, index=False)
     elif format_type == 'xlsx':
-        excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False)
-        excel_buffer.seek(0)
-        return send_file(
-            excel_buffer,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=filename
-        )
-
+        df.to_excel(filepath, index=False)
     elif format_type == 'pdf':
         pdf_buffer = io.BytesIO()
         p = canvas.Canvas(pdf_buffer, pagesize=letter)
@@ -88,15 +99,10 @@ def download():
                 y = 750
 
         p.save()
-        pdf_buffer.seek(0)
-        return send_file(
-            pdf_buffer,
-            mimetype='application/pdf',
-            as_attachment=True,
-            download_name=filename
-        )
+        with open(filepath, 'wb') as f:
+            f.write(pdf_buffer.getvalue())
 
-    return jsonify({"error": "Format non supporté"}), 400
+    return jsonify({"message": f"Fichier sauvegardé dans {filepath}"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=8080)

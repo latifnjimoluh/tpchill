@@ -139,3 +139,32 @@ tr:hover {
         font-size: 24px;
     }
 }
+
+/* styles.css */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.pagination button {
+    padding: 8px 12px;
+    border: 1px solid #3498db;
+    background-color: white;
+    color: #3498db;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.pagination button:hover {
+    background-color: #3498db;
+    color: white;
+}
+
+.pagination button:disabled {
+    background-color: #3498db;
+    color: white;
+    cursor: not-allowed;
+}
