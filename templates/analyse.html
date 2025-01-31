@@ -26,20 +26,38 @@
 
         <!-- Formulaire de comparaison des performances -->
         <h2>Comparaison des performances</h2>
-        <form action="{{ url_for('compare_performance') }}" method="get">
-            <label for="teams">Sélectionnez les équipes à comparer :</label>
-            <select name="teams" id="teams" multiple>
+        <form action="{{ url_for('compare_performance') }}" method="get" onsubmit="return validateYears()">
+            <label>Sélectionnez les équipes à comparer :</label>
+
+            <button type="button" id="select-all">Tout sélectionner</button>
+            <button type="button" id="deselect-all">Tout désélectionner</button>
+
+
+            <div class="checkbox-group">
                 {% for team in teams %}
-                    <option value="{{ team }}">{{ team }}</option>
+                    <label>
+                        <input type="checkbox" name="teams" value="{{ team }}" class="team-checkbox"> {{ team }}
+                    </label>
                 {% endfor %}
-            </select>
+            </div>
             <br>
             <label for="start_year">Année de début :</label>
-            <input type="number" name="start_year" id="start_year" min="1900" max="2100">
+            <select name="start_year" id="start_year" required>
+                {% for year in years %}
+                    <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+            </select>
             <label for="end_year">Année de fin :</label>
-            <input type="number" name="end_year" id="end_year" min="1900" max="2100">
+            <select name="end_year" id="end_year" required>
+                {% for year in years %}
+                    <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+            </select>
+            <!-- Message d'erreur -->
+            <p id="year_error" style="color: red; display: none;">L'année de début ne peut pas être supérieure à l'année de fin.</p>
+
             <br>
-            <button type="submit">Comparer</button>
+            <button type="submit" id="compare-button" disabled>Comparer</button>
         </form>
 
         {% if stats %}
@@ -128,6 +146,69 @@
                 </tbody>
             </table>
         {% endif %}
+
+        {% if comparison_plots %}
+            <h2>Graphiques de comparaison</h2>
+            <div class="plot-container">
+                <h3>Évolution des victoires par équipe</h3>
+                <img src="data:image/png;base64,{{ comparison_plots.victory_plot }}" alt="Évolution des victoires">
+            </div>
+            <div class="plot-container">
+                <h3>Évolution du pourcentage de victoires par équipe</h3>
+                <img src="data:image/png;base64,{{ comparison_plots.win_plot }}" alt="Évolution du pourcentage de victoires">
+            </div>
+            <div class="plot-container">
+                <h3>Évolution des buts marqués (Gf) par équipe</h3>
+                <img src="data:image/png;base64,{{ comparison_plots.gf_plot }}" alt="Évolution des buts marqués">
+            </div>
+            <div class="plot-container">
+                <h3>Évolution des buts encaissés (Ga) par équipe</h3>
+                <img src="data:image/png;base64,{{ comparison_plots.ga_plot }}" alt="Évolution des buts encaissés">
+            </div>
+        {% endif %}
+
     </div>
+    <script>
+        // Fonction pour activer/désactiver le bouton de comparaison
+        function validateYears() {
+            const startYear = document.getElementById('start_year').value;
+            const endYear = document.getElementById('end_year').value;
+            const errorMessage = document.getElementById('year_error'); // Corrigé ici
+            const compareButton = document.getElementById('compare-button');
+        
+            if (parseInt(startYear) > parseInt(endYear)) {
+                errorMessage.style.display = 'block';
+                compareButton.disabled = true;
+            } else {
+                errorMessage.style.display = 'none';
+                compareButton.disabled = false;
+            }
+        }
+        
+        // Ajouter des écouteurs d'événements pour vérifier les sélections d'années
+        document.getElementById('start_year').addEventListener('change', validateYears);
+        document.getElementById('end_year').addEventListener('change', validateYears);
+        
+        // Validation initiale si les années sont déjà sélectionnées
+        validateYears();
+    </script>
+    <script>
+        // Fonction pour tout sélectionner
+        document.getElementById('select-all').addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('.team-checkbox');
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = true;
+            });
+        });
+    
+        // Fonction pour tout désélectionner
+        document.getElementById('deselect-all').addEventListener('click', function() {
+            const checkboxes = document.querySelectorAll('.team-checkbox');
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = false;
+            });
+        });
+    </script>
+    
 </body>
 </html>

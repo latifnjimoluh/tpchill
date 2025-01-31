@@ -1,4 +1,8 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import io
+import base64
 
 class DataAnalyzer:
     def __init__(self, file_path="data/csv/all_teams.csv"):
@@ -80,20 +84,103 @@ class DataAnalyzer:
         
         return win_ratio.to_dict(orient="records")
     
-    def compare_teams_performance(self, team_names, start_year=None, end_year=None):
+    def generate_comparison_plots(self, team_names, start_year=None, end_year=None):
         """
-        Compare les performances de plusieurs équipes sur une période donnée.
+        Génère des graphiques de comparaison pour les équipes sélectionnées.
         :param team_names: Liste des noms des équipes à comparer.
         :param start_year: Année de début (optionnelle).
         :param end_year: Année de fin (optionnelle).
-        :return: Un DataFrame contenant les performances des équipes sélectionnées.
+        :return: Un dictionnaire contenant les graphiques en base64.
+        """
+        df_filtered = self.compare_teams_performance(team_names, start_year, end_year)
+
+        if df_filtered.empty:
+            return None
+
+        plots = {}
+
+        # Graphique 1 : Évolution des victoires par équipe
+        plt.figure(figsize=(10, 5))
+        sns.lineplot(data=df_filtered, x="Years", y="Victory", hue="Name", marker="o")
+        plt.title("Évolution des victoires par équipe")
+        plt.xlabel("Année")
+        plt.ylabel("Nombre de victoires")
+        plt.legend(title="Équipe", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+
+        # Convertir en base64
+        img_io = io.BytesIO()
+        plt.savefig(img_io, format='png')
+        img_io.seek(0)
+        plots["victory_plot"] = base64.b64encode(img_io.getvalue()).decode()
+        plt.close()
+
+        # Graphique 2 : Évolution du pourcentage de victoires par équipe
+        plt.figure(figsize=(10, 5))
+        sns.lineplot(data=df_filtered, x="Years", y="Win", hue="Name", marker="o")
+        plt.title("Évolution du pourcentage de victoires par équipe")
+        plt.xlabel("Année")
+        plt.ylabel("Pourcentage de victoires")
+        plt.legend(title="Équipe", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+
+        # Convertir en base64
+        img_io = io.BytesIO()
+        plt.savefig(img_io, format='png')
+        img_io.seek(0)
+        plots["win_plot"] = base64.b64encode(img_io.getvalue()).decode()
+        plt.close()
+
+        # Graphique 3 : Évolution des buts marqués (Gf) par équipe
+        plt.figure(figsize=(10, 5))
+        sns.lineplot(data=df_filtered, x="Years", y="Gf", hue="Name", marker="o")
+        plt.title("Évolution des buts marqués par équipe")
+        plt.xlabel("Année")
+        plt.ylabel("Buts marqués (Gf)")
+        plt.legend(title="Équipe", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+
+        # Convertir en base64
+        img_io = io.BytesIO()
+        plt.savefig(img_io, format='png')
+        img_io.seek(0)
+        plots["gf_plot"] = base64.b64encode(img_io.getvalue()).decode()
+        plt.close()
+
+        # Graphique 4 : Évolution des buts encaissés (Ga) par équipe
+        plt.figure(figsize=(10, 5))
+        sns.lineplot(data=df_filtered, x="Years", y="Ga", hue="Name", marker="o")
+        plt.title("Évolution des buts encaissés par équipe")
+        plt.xlabel("Année")
+        plt.ylabel("Buts encaissés (Ga)")
+        plt.legend(title="Équipe", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout()
+
+        # Convertir en base64
+        img_io = io.BytesIO()
+        plt.savefig(img_io, format='png')
+        img_io.seek(0)
+        plots["ga_plot"] = base64.b64encode(img_io.getvalue()).decode()
+        plt.close()
+
+        return plots
+
+    
+    def compare_teams_performance(self, team_names, start_year=None, end_year=None):
+        """
+        Filtre les données pour les équipes sélectionnées et la période spécifiée.
+        :param team_names: Liste des noms des équipes à comparer.
+        :param start_year: Année de début (optionnelle).
+        :param end_year: Année de fin (optionnelle).
+        :return: DataFrame filtré contenant les performances des équipes sur la période spécifiée.
         """
         # Filtrer les données pour les équipes sélectionnées
         df_filtered = self.df[self.df["Name"].isin(team_names)]
         
-        # Filtrer par période si les années sont spécifiées
-        if start_year and end_year:
-            df_filtered = df_filtered[(df_filtered["Years"] >= start_year) & (df_filtered["Years"] <= end_year)]
+        # Filtrer les années si elles sont spécifiées
+        if start_year:
+            df_filtered = df_filtered[df_filtered["Years"] >= start_year]
+        if end_year:
+            df_filtered = df_filtered[df_filtered["Years"] <= end_year]
         
-        # Retourner les données filtrées
         return df_filtered

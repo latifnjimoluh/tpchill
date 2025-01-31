@@ -102,17 +102,12 @@ def analyse():
 
     df = analyzer.df  
     teams = df["Name"].unique().tolist()
+    years = sorted(df["Years"].unique().tolist())  # Récupérer les années disponibles
 
     stats, corr_victory_gf, corr_win_ga = analyzer.analyze(team if team else None)
 
     best_year = analyzer.best_year(team) if team else None
     performance_trend = analyzer.performance_over_years(team) if team else None
-
-    # Calculer la corrélation entre victoires et buts marqués
-    correlation_victory_gf = analyzer.correlation_victory_gf()
-
-    # Identifier les meilleures équipes par ratio de victoires
-    best_teams = analyzer.best_teams_by_win_ratio(top_n=10)
 
     return render_template('analyse.html', 
                            stats=stats, 
@@ -122,8 +117,7 @@ def analyse():
                            selected_team=team,
                            best_year=best_year,
                            performance_trend=performance_trend,
-                           correlation_victory_gf=correlation_victory_gf,
-                           best_teams=best_teams)
+                           years=years)  # Passer les années au template
 
 @app.route('/compare_performance')
 def compare_performance():
@@ -134,24 +128,20 @@ def compare_performance():
     start_year = request.args.get("start_year", type=int)
     end_year = request.args.get("end_year", type=int)
     
-    # Vérification de la validité de l'année de fin
-    if start_year and end_year and end_year < start_year:
-        return jsonify({"error": "L'année de fin ne peut pas être inférieure à l'année de début"}), 400
-    
     # Comparer les performances des équipes sélectionnées
     comparison_data = analyzer.compare_teams_performance(team_names, start_year, end_year)
     
     # Convertir le DataFrame en liste de dictionnaires pour le template
     comparison_data = comparison_data.to_dict(orient="records")
     
-    # Récupérer les années depuis le CSV
-    years = analyzer.df["Years"].unique().tolist()
-
+    # Générer les graphiques de comparaison
+    comparison_plots = analyzer.generate_comparison_plots(team_names, start_year, end_year)
+    
     return render_template('analyse.html', 
                            comparison_data=comparison_data,
+                           comparison_plots=comparison_plots,  # Passer les graphiques au template
                            teams=analyzer.df["Name"].unique().tolist(),
-                           years=years)
-
+                           years=sorted(analyzer.df["Years"].unique().tolist()))
      
 @app.route('/search')
 def search():

@@ -342,9 +342,29 @@ button[type="submit"]:hover {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
+    margin-bottom: 20px;
 }
 
-.checkbox-item {
-    width: 18%; /* Cela permet d'avoir environ 5 checkboxes par ligne */
-    display: inline-block;
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.checkbox-group input[type="checkbox"] {
+    margin: 0;
+}
+
+/* stylesdata.css */
+
+.plot-container {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.plot-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
