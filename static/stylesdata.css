@@ -337,3 +337,14 @@ button[type="submit"] {
 button[type="submit"]:hover {
     background-color: #2980b9; /* Bleu plus foncé */
 }
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.checkbox-item {
+    width: 18%; /* Cela permet d'avoir environ 5 checkboxes par ligne */
+    display: inline-block;
+}

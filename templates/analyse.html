@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyse des données</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesdata.css') }}">
+</head>
+<body>
+    {% include 'navbar.html' %} 
+
+    <div class="container">
+        <h1>Analyse des données</h1>
+
+        <!-- Formulaire de sélection de l'équipe -->
+        <form action="{{ url_for('analyse') }}" method="get">
+            <label for="team">Sélectionnez une équipe :</label>
+            <select name="team" id="team">
+                <option value="">Toutes les équipes</option>
+                {% for team in teams %}
+                    <option value="{{ team }}" {% if selected_team == team %}selected{% endif %}>{{ team }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Analyser</button>
+        </form>
+
+        <!-- Formulaire de comparaison des performances -->
+        <h2>Comparaison des performances</h2>
+        <form action="{{ url_for('compare_performance') }}" method="get">
+            <label for="teams">Sélectionnez les équipes à comparer :</label>
+            <select name="teams" id="teams" multiple>
+                {% for team in teams %}
+                    <option value="{{ team }}">{{ team }}</option>
+                {% endfor %}
+            </select>
+            <br>
+            <label for="start_year">Année de début :</label>
+            <input type="number" name="start_year" id="start_year" min="1900" max="2100">
+            <label for="end_year">Année de fin :</label>
+            <input type="number" name="end_year" id="end_year" min="1900" max="2100">
+            <br>
+            <button type="submit">Comparer</button>
+        </form>
+
+        {% if stats %}
+            <h2>Statistiques descriptives {% if selected_team %} pour {{ selected_team }} {% endif %}</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Moyenne</th>
+                        <th>Médiane</th>
+                        <th>Mode</th>
+                        <th>Écart-type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for column, values in stats.items() %}
+                        <tr>
+                            <td>{{ column }}</td>
+                            <td>{{ values["Moyenne"] | round(2) }}</td>
+                            <td>{{ values["Médiane"] | round(2) }}</td>
+                            <td>{{ values["Mode"] | round(2) }}</td>
+                            <td>{{ values["Écart-type"] | round(2) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <h2>Corrélations</h2>
+            <ul>
+                <li>Corrélation entre le nombre de victoires et les buts marqués (Gf) : {{ corr_victory_gf | round(2) }}</li>
+                <li>Corrélation entre le pourcentage de victoires et les buts encaissés (Ga) : {{ corr_win_ga | round(2) }}</li>
+            </ul>
+        {% endif %}
+
+        {% if best_year %}
+            <h2>Meilleure année de performance</h2>
+            <p>L'équipe <strong>{{ selected_team }}</strong> a eu son meilleur pourcentage de victoires en <strong>{{ best_year.year }}</strong> avec <strong>{{ best_year.win_percentage | round(2) }}%</strong> de victoires.</p>
+        {% endif %}
+
+        {% if performance_trend %}
+            <h2>Évolution des performances sur plusieurs années</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Année</th>
+                        <th>Pourcentage de victoires</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for year, win_percentage in performance_trend.items() %}
+                        <tr>
+                            <td>{{ year }}</td>
+                            <td>{{ win_percentage | round(2) }}%</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {% if comparison_data %}
+            <h2>Comparaison des performances</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Équipe</th>
+                        <th>Année</th>
+                        <th>Victoires</th>
+                        <th>Défaites</th>
+                        <th>Win %</th>
+                        <th>Buts marqués (GF)</th>
+                        <th>Buts encaissés (GA)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in comparison_data %}
+                        <tr>
+                            <td>{{ row["Name"] }}</td>
+                            <td>{{ row["Years"] }}</td>
+                            <td>{{ row["Victory"] }}</td>
+                            <td>{{ row["Losses"] }}</td>
+                            <td>{{ row["Win"] | round(2) }}%</td>
+                            <td>{{ row["Gf"] }}</td>
+                            <td>{{ row["Ga"] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</body>
+</html>

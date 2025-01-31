@@ -1,89 +1,99 @@
-import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
 
-# Charger les données CSV
-def load_data(file_name):
-    return pd.read_csv(file_name)
+class DataAnalyzer:
+    def __init__(self, file_path="data/csv/all_teams.csv"):
+        """
+        Initialise l'analyseur de données avec le fichier CSV.
+        """
+        self.file_path = file_path
+        self.df = self.load_data()
+    
+    def load_data(self):
+        """
+        Charge les données depuis le fichier CSV.
+        """
+        return pd.read_csv(self.file_path)
+    
+    def analyze(self, team=None):
+        """
+        Analyse les données et retourne les statistiques descriptives et les corrélations.
+        """
+        df = self.df
+        
+        if team:
+            df = df[df["Name"] == team]
+        
+        if df.empty:
+            return None, None, None
+        
+        stats = {}
+        columns = ["Victory", "Win", "Gf", "Ga"]
+        
+        for col in columns:
+            stats[col] = {
+                "Moyenne": df[col].mean(),
+                "Médiane": df[col].median(),
+                "Mode": df[col].mode()[0] if not df[col].mode().empty else None,
+                "Écart-type": df[col].std()
+            }
+        
+        # Calcul des corrélations
+        corr_victory_gf = df["Victory"].corr(df["Gf"], method="pearson")
+        corr_win_ga = df["Win"].corr(df["Ga"], method="pearson")
+        
+        return stats, corr_victory_gf, corr_win_ga
 
-# Visualisation des données
-def visualize_data(df):
-    # Conversion des colonnes si nécessaire
-    df["Years"] = pd.to_numeric(df["Years"], errors="coerce")
-    df["Victory"] = pd.to_numeric(df["Victory"], errors="coerce")
-    df["Gf"] = pd.to_numeric(df["Gf"], errors="coerce")
-    df["Win"] = pd.to_numeric(df["Win"], errors="coerce")
+    def best_year(self, team):
+        """
+        Retourne l'année où l'équipe a eu le meilleur pourcentage de victoires.
+        """
+        df = self.df[self.df["Name"] == team]
+        if df.empty:
+            return None
 
-    # Filtrer les données pour les visualisations
-    team_name = df["Name"].iloc[0]  # Nom de l'équipe en cours (première ligne du CSV)
+        best_row = df.loc[df["Win"].idxmax()]
+        return {"year": best_row["Years"], "win_percentage": best_row["Win"]}
 
-    # 1. Évolution des victoires d'une équipe sur plusieurs années (courbe)
-    plt.figure(figsize=(10, 6))
-    team_data = df[df["Name"] == team_name]
-    plt.plot(team_data["Years"], team_data["Victory"], marker="o", label="Victoires")
-    plt.title(f"Évolution des victoires de l'équipe {team_name}")
-    plt.xlabel("Année")
-    plt.ylabel("Nombre de victoires")
-    plt.legend()
-    plt.grid()
-    plt.show()
+    def performance_over_years(self, team):
+        """
+        Retourne les performances de l'équipe sur plusieurs années sous forme de dictionnaire {année: win_percentage}.
+        """
+        df = self.df[self.df["Name"] == team]
+        if df.empty:
+            return {}
 
-    # 2. Comparaison du nombre de buts marqués par année
-    plt.figure(figsize=(10, 6))
-    sns.histplot(data=team_data, x="Years", weights="Gf", kde=False, bins=10, color="skyblue")
-    plt.title(f"Nombre de buts marqués par l'équipe {team_name} par année")
-    plt.xlabel("Année")
-    plt.ylabel("Nombre de buts marqués")
-    plt.grid()
-    plt.show()
+        return df.set_index("Years")["Win"].to_dict()
 
-    # 3. Victoires par équipe
-    plt.figure(figsize=(10, 6))
-    sns.boxplot(x="Name", y="Victory", data=df)
-    plt.title("Répartition des victoires par équipe")
-    plt.xlabel("Équipe")
-    plt.ylabel("Victoires")
-    plt.xticks(rotation=45)
-    plt.grid()
-    plt.show()
+    def correlation_victory_gf(self):
+        """
+        Calcule la corrélation entre le nombre de victoires et les buts marqués (GF).
+        """
+        return self.df["Victory"].corr(self.df["Gf"], method="pearson")
 
-    # 4. Performances moyennes par année
-    plt.figure(figsize=(12, 8))
-    heatmap_data = df.groupby("Years")[["Victory", "Gf", "Ga", "Win"]].mean()
-    sns.heatmap(heatmap_data, annot=True, fmt=".2f", cmap="coolwarm")
-    plt.title("Performances moyennes par année")
-    plt.xlabel("Statistiques")
-    plt.ylabel("Année")
-    plt.show()
-
-    # 5. Nombre de buts marqués vs Pourcentage de victoires
-    plt.figure(figsize=(10, 6))
-    sns.scatterplot(data=df, x="Gf", y="Win", hue="Name", size="Victory", sizes=(50, 300), palette="viridis")
-    plt.title("Corrélation entre buts marqués et pourcentage de victoires")
-    plt.xlabel("Buts marqués (Gf)")
-    plt.ylabel("Pourcentage de victoires (Win %)")
-    plt.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-    plt.grid()
-    plt.show()
-
-    # 6. Distribution des performances pour une année donnée
-    year_filter = 2010  # Vous pouvez changer l'année ici
-    year_data = df[df["Years"] == year_filter]
-    plt.figure(figsize=(10, 6))
-    sns.barplot(data=year_data, x="Name", y="Win", palette="Blues_d")
-    plt.title(f"Performances des équipes en {year_filter}")
-    plt.xlabel("Équipe")
-    plt.ylabel("Pourcentage de victoires (Win %)")
-    plt.xticks(rotation=45)
-    plt.grid()
-    plt.show()
-
-# Exemple d'utilisation
-team_name = "canadiens"  # Remplacez par l'équipe pour laquelle les données ont été extraites
-csv_file = f"{team_name}_team_data.csv"
-
-# Charger les données du fichier CSV généré
-df = load_data(csv_file)
-
-# Visualiser les données
-visualize_data(df)
+    def best_teams_by_win_ratio(self, top_n=10):
+        """
+        Retourne les équipes avec le meilleur ratio de victoires sur plusieurs années.
+        """
+        # Calculer la moyenne du pourcentage de victoires par équipe
+        win_ratio = self.df.groupby("Name")["Win"].mean().reset_index()
+        win_ratio = win_ratio.sort_values(by="Win", ascending=False).head(top_n)
+        
+        return win_ratio.to_dict(orient="records")
+    
+    def compare_teams_performance(self, team_names, start_year=None, end_year=None):
+        """
+        Compare les performances de plusieurs équipes sur une période donnée.
+        :param team_names: Liste des noms des équipes à comparer.
+        :param start_year: Année de début (optionnelle).
+        :param end_year: Année de fin (optionnelle).
+        :return: Un DataFrame contenant les performances des équipes sélectionnées.
+        """
+        # Filtrer les données pour les équipes sélectionnées
+        df_filtered = self.df[self.df["Name"].isin(team_names)]
+        
+        # Filtrer par période si les années sont spécifiées
+        if start_year and end_year:
+            df_filtered = df_filtered[(df_filtered["Years"] >= start_year) & (df_filtered["Years"] <= end_year)]
+        
+        # Retourner les données filtrées
+        return df_filtered
