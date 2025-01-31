@@ -1,0 +1,21 @@
+# Bibliothèques pour le web scraping
+requests
+beautifulsoup4
+
+# Bibliothèques pour la manipulation et l'analyse des données
+pandas
+numpy
+
+# Bibliothèques pour la visualisation des données
+matplotlib
+seaborn
+
+# Framework web
+Flask
+
+# Autres dépendances utiles
+lxml  # Pour accélérer BeautifulSoup
+openpyxl  # Pour manipuler des fichiers Excel si nécessaire
+
+# Pour générer des fichiers PDF
+reportlab
