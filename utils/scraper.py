@@ -1,84 +1,75 @@
+import os
 import requests
 from bs4 import BeautifulSoup
-import csv
 import pandas as pd
-import os
-import re
-def scrape_all_pages(team_name):
-    base_url = "https://www.scrapethissite.com/pages/forms/"
-    page = 1  # Page initiale
-    all_data = []
+import datetime
 
-    while True:
-        # Construire l'URL avec la pagination
-        url = f"{base_url}?q={team_name}&page={page}"
-        
-        # Effectuer la requête HTTP
+class Scraper:
+    BASE_URL = "https://www.scrapethissite.com/pages/forms/?q="
+
+    @staticmethod
+    def recuperer_donnees(nom_equipe):
+        """Récupère les données d'une équipe de hockey via web scraping"""
+        url = Scraper.BASE_URL + nom_equipe.replace(" ", "+")
         response = requests.get(url)
+
         if response.status_code != 200:
-            print(f"Erreur lors de la connexion au site : {response.status_code}")
-            break
+            raise Exception(f"Erreur de requête : {response.status_code}")
 
-        # Parser le contenu HTML
-        soup = BeautifulSoup(response.content, "html.parser")
-        teams = soup.find_all("tr", class_="team")
-        
-        # Arrêter si aucune équipe n'est trouvée (fin des pages)
-        if not teams:
-            print(f"Fin du scraping. Aucune équipe trouvée à la page {page}.")
-            break
-        
-        # Extraire les informations des équipes sur la page actuelle
-        for team in teams:
-            try:
-                name = team.find("td", class_="name").text.strip()
-                year = team.find("td", class_="year").text.strip()
-                wins = team.find("td", class_="wins").text.strip()
-                losses = team.find("td", class_="losses").text.strip()
-                ot_losses = team.find("td", class_="ot-losses").text.strip()
-                win_percentage = team.find("td", class_="pct").text.strip()
-                goals_for = team.find("td", class_="gf").text.strip()
-                goals_against = team.find("td", class_="ga").text.strip()
-                
-                all_data.append({
-                    "Name": name,
-                    "Years": year,
-                    "Victory": wins,
-                    "Losses": losses,
-                    "OtLosses": ot_losses,
-                    "Win": win_percentage,
-                    "Gf": goals_for,
-                    "Ga": goals_against
-                })
-            except AttributeError:
-                continue
+        soup = BeautifulSoup(response.text, "html.parser")
+        equipes = []
 
-        page += 1  # Passer à la page suivante
+        for row in soup.select("tr.team"):
+            def safe_int(value):
+                return int(value.strip()) if value and value.strip().isdigit() else 0
 
-    return all_data
+            def safe_float(value):
+                return float(value.strip()) if value and value.strip().replace('.', '', 1).isdigit() else 0.0
 
-def save_to_csv(data, team_name):
-    if not data:
-        print("Aucune donnée trouvée pour cette équipe.")
-        return
-    
-    # Nettoyer le nom de fichier pour éviter les caractères spéciaux
-    csv_filename = f"{re.sub(r'[^a-zA-Z0-9]', '_', team_name)}_team_data.csv"
-    with open(csv_filename, mode="w", newline="", encoding="utf-8") as file:
-        writer = csv.DictWriter(file, fieldnames=["Name", "Years", "Victory", "Losses", "OtLosses", "Win", "Gf", "Ga"])
-        writer.writeheader()
-        writer.writerows(data)
-    print(f"Données sauvegardées dans le fichier {csv_filename}.")
-    return csv_filename
+            def get_text_or_default(element, default="0"):
+                return element.get_text(strip=True) if element else default
+
+            equipe = {
+                "nom": get_text_or_default(row.select_one("td.name"), "Inconnu"),
+                "annee": safe_int(get_text_or_default(row.select_one("td.year"))),
+                "victoires": safe_int(get_text_or_default(row.select_one("td.wins"))),
+                "defaites": safe_int(get_text_or_default(row.select_one("td.losses"))),
+                "defaites_prolongation": safe_int(get_text_or_default(row.select_one("td.ot-losses"))),
+                "pourcentage_victoires": safe_float(get_text_or_default(row.select_one("td.winpct"), "0.0")),
+                "buts_marques": safe_int(get_text_or_default(row.select_one("td.goals-for"))),
+                "buts_encaisses": safe_int(get_text_or_default(row.select_one("td.goals-against"))),
+            }
+            
+            equipes.append(equipe)
+
+        return equipes
+
+    @staticmethod
+    def sauvegarder_csv(equipes, nom_equipe):
+        """Sauvegarde ou met à jour les données dans un fichier CSV existant"""
+        if not equipes:
+            print("❌ Aucune donnée trouvée ! Vérifiez le site ou les sélecteurs CSS.")
+            return
+
+        nom_equipe = "".join(c for c in nom_equipe if c.isalnum() or c in ["", "-"]).replace(" ", "")
+        nom_fichier = f"hockey_{nom_equipe}.csv"
+
+        if os.path.exists(nom_fichier):
+            # Charger l'ancien fichier et fusionner les nouvelles données
+            df_ancien = pd.read_csv(nom_fichier)
+            df_nouveau = pd.DataFrame(equipes)
+
+            # Vérifier s'il y a des doublons avant de concaténer
+            df_final = pd.concat([df_ancien, df_nouveau]).drop_duplicates(subset=["nom", "annee"], keep="last")
+        else:
+            df_final = pd.DataFrame(equipes)
+
+        # Sauvegarder le fichier CSV mis à jour
+        df_final.to_csv(nom_fichier, index=False)
+        print(f"📁 Données sauvegardées dans {nom_fichier}")
+
 
 # Exemple d'utilisation
-team_name = "canadiens"  # Remplacez par un nom valide ou laissez vide pour toutes les équipes
-data = scrape_all_pages(team_name)
-csv_file = save_to_csv(data, team_name)
-
-# Vérification du fichier CSV
-if csv_file and os.path.exists(csv_file):
-    df = pd.read_csv(csv_file)
-    display(df)
-else:
-    print("Fichier non trouvé ou aucune donnée à afficher.")
+nom_equipe = "Canadiens de Montréal"
+equipes = Scraper.recuperer_donnees(nom_equipe)
+Scraper.sauvegarder_csv(equipes, nom_equipe)

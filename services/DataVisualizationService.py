@@ -37,13 +37,20 @@ class DataVisualizationService:
         img_io.seek(0)
         return base64.b64encode(img_io.getvalue()).decode()
 
-    def generate_scatter_plot(self):
+    def generate_scatter_plot(self, team_name=None):
         """Génère un scatter plot entre les buts marqués et le pourcentage de victoires"""
         plt.figure(figsize=(8, 5))
-        sns.scatterplot(x="Gf", y="Win", data=self.df, hue="Name", palette="deep", size="Victory", sizes=(20, 200))
+        
+        if team_name:
+            df_filtered = self.df[self.df["Name"] == team_name]
+            sns.scatterplot(x="Gf", y="Win", data=df_filtered, color="blue", size="Victory", sizes=(20, 200))
+            plt.title(f"Scatter plot pour l'équipe {team_name}")
+        else:
+            sns.scatterplot(x="Gf", y="Win", data=self.df, hue="Name", palette="deep", size="Victory", sizes=(20, 200))
+            plt.title("Scatter plot entre buts marqués et pourcentage de victoires")
+        
         plt.xlabel("Nombre de buts marqués")
         plt.ylabel("Pourcentage de victoires")
-        plt.title("Scatter plot entre buts marqués et pourcentage de victoires")
         plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         
         # Convertir en base64
@@ -52,9 +59,11 @@ class DataVisualizationService:
         img_io.seek(0)
         return base64.b64encode(img_io.getvalue()).decode()
 
-    def generate_performance_distribution(self):
+    def generate_performance_distribution(self, year_selected=None):
         """Génère un graphique de distribution des victoires pour une année donnée"""
-        year_selected = self.df["Years"].max()  # Sélectionner la dernière année disponible
+        if year_selected is None:
+            year_selected = self.df["Years"].max()  # Sélectionner la dernière année disponible par défaut
+        
         df_year = self.df[self.df["Years"] == year_selected]
         
         plt.figure(figsize=(8, 5))

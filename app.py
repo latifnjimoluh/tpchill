@@ -69,18 +69,31 @@ def datavisualisation():
     performance_distribution = None
 
     if request.method == 'POST':
+        # Récupérer les paramètres du formulaire
+        year_selected = request.form.get('year_selected')
+        team_name = request.form.get('team_name')
+
         # Générer les graphiques demandés
         boxplot_victories = datadataVisualization.generate_boxplot_victories()
         heatmap_performance = datadataVisualization.generate_heatmap_performance()
-        scatter_plot = datadataVisualization.generate_scatter_plot()
-        performance_distribution = datadataVisualization.generate_performance_distribution()
+        
+        # Scatter plot avec sélection d'équipe
+        scatter_plot = datadataVisualization.generate_scatter_plot(team_name)
+        
+        # Distribution des victoires avec sélection d'année
+        performance_distribution = datadataVisualization.generate_performance_distribution(int(year_selected) if year_selected else None)
+
+    # Récupérer la liste des années et des équipes pour le formulaire
+    years = datadataVisualization.df["Years"].unique().tolist()
+    teams = datadataVisualization.df["Name"].unique().tolist()
 
     return render_template('data_visualisation.html', 
                            boxplot_victories=boxplot_victories, 
                            heatmap_performance=heatmap_performance,
                            scatter_plot=scatter_plot,
-                           performance_distribution=performance_distribution)
-
+                           performance_distribution=performance_distribution,
+                           years=years,
+                           teams=teams)
 
 @app.route('/search')
 def search():
