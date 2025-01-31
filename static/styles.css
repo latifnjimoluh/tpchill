@@ -140,7 +140,6 @@ tr:hover {
     }
 }
 
-/* styles.css */
 .pagination {
     display: flex;
     justify-content: center;
@@ -168,3 +167,26 @@ tr:hover {
     color: white;
     cursor: not-allowed;
 }
+
+/* Styles pour le select et le bouton de téléchargement */
+.select-format {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.select-format:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+

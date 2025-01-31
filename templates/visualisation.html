@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisation des données</title>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylenavbar.css') }}">
+    <style>
+        /* Global Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        h1, h2 {
+            color: #2c3e50;
+            margin: 20px 0;
+        }
+        /* Main Content Styles */
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        label, select, button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        select, button {
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 5px;
+            width: 100%;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        img {
+            width: 100%;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    {% include 'navbar.html' %}
+
+    <div class="container">
+        <h1>Choisir une équipe</h1>
+
+        <!-- Formulaire de sélection d'équipe -->
+        <form method="POST">
+            <label for="team_name">Sélectionner une équipe :</label>
+            <select name="team_name" id="team_name">
+                {% for team in teams %}
+                    <option value="{{ team }}" {% if selected_team == team %}selected{% endif %}>{{ team }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit">Afficher</button>
+        </form>
+
+        <!-- Affichage des graphiques -->
+        {% if victory_plot %}
+            <h2>Évolution des Victoires</h2>
+            <img src="data:image/png;base64,{{ victory_plot }}" alt="Évolution des victoires">
+        {% endif %}
+
+        {% if goals_histogram_equipe %}
+            <h2>Histogramme des Buts Marqués de l'Équipe {{ selected_team }}</h2>
+            <img src="data:image/png;base64,{{ goals_histogram_equipe }}" alt="Histogramme des buts marqués">
+        {% endif %}
+
+        {% if goals_histogram %}
+            <h2>Histogramme des Buts Marqués (Toutes Équipes)</h2>
+            <img src="data:image/png;base64,{{ goals_histogram }}" alt="Histogramme des buts marqués total">
+        {% endif %}
+    </div>
+</body>
+</html>

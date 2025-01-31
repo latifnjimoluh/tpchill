@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify, send_file
 from services.HockeyService import HockeyService
+from services.VisualizationService import VisualizationService
+from services.DataVisualizationService import DataVisualizationService
 import pandas as pd
 import io
 from reportlab.lib.pagesizes import letter
@@ -8,14 +10,77 @@ import os
 
 app = Flask(__name__)
 hockey_service = HockeyService()
+visualization_service = VisualizationService()
+datadataVisualization = DataVisualizationService()
 
-# Créer le dossier data s'il n'existe pas
-if not os.path.exists('data'):
-    os.makedirs('data')
+# Créer les dossiers pour chaque type de fichier s'ils n'existent pas
+DATA_DIR = "data"
+CSV_DIR = os.path.join(DATA_DIR, "csv")
+XLSX_DIR = os.path.join(DATA_DIR, "xlsx")
+PDF_DIR = os.path.join(DATA_DIR, "pdf")
+
+for directory in [CSV_DIR, XLSX_DIR, PDF_DIR]:
+    os.makedirs(directory, exist_ok=True)
 
 @app.route('/')
 def home():
     return render_template('index.html')
+
+@app.route('/visualisation', methods=['GET', 'POST'])
+def visualisation():
+    teams, error = visualization_service.get_teams()
+    selected_team = None
+    victory_plot = None
+    goals_histogram_equipe = None
+    goals_histogram = None
+
+    if request.method == 'POST':
+        selected_team = request.form.get('team_name')
+        
+        # Générer le graphique des victoires pour l'équipe choisie
+        if selected_team:
+            victory_plot, error = visualization_service.generate_victory_plot(selected_team)
+            if error:
+                return f"Erreur : {error}", 500
+
+            # Générer l'histogramme des buts pour l'équipe choisie
+            goals_histogram_equipe, error = visualization_service.generate_goals_histogram_equipe(selected_team)
+            if error:
+                return f"Erreur : {error}", 500
+
+        # Générer l'histogramme des buts pour toutes les équipes
+        goals_histogram, error = visualization_service.generate_goals_histogram()
+        if error:
+            return f"Erreur : {error}", 500
+
+    return render_template('visualisation.html', 
+                           teams=teams, 
+                           selected_team=selected_team, 
+                           victory_plot=victory_plot, 
+                           goals_histogram_equipe=goals_histogram_equipe, 
+                           goals_histogram=goals_histogram)
+
+
+@app.route('/data_visualisation', methods=['GET', 'POST'])
+def datavisualisation():
+    boxplot_victories = None
+    heatmap_performance = None
+    scatter_plot = None
+    performance_distribution = None
+
+    if request.method == 'POST':
+        # Générer les graphiques demandés
+        boxplot_victories = datadataVisualization.generate_boxplot_victories()
+        heatmap_performance = datadataVisualization.generate_heatmap_performance()
+        scatter_plot = datadataVisualization.generate_scatter_plot()
+        performance_distribution = datadataVisualization.generate_performance_distribution()
+
+    return render_template('data_visualisation.html', 
+                           boxplot_victories=boxplot_victories, 
+                           heatmap_performance=heatmap_performance,
+                           scatter_plot=scatter_plot,
+                           performance_distribution=performance_distribution)
+
 
 @app.route('/search')
 def search():
@@ -78,20 +143,26 @@ def download():
         return jsonify({"error": "Aucune donnée trouvée"}), 404
 
     filename = f"{team_name if team_name != 'all' else 'all_teams'}.{format_type}"
-    filepath = os.path.join('data', filename)
-    df = pd.DataFrame(data)
-
+    
+    # Définir le répertoire de stockage en fonction du type de fichier
     if format_type == 'csv':
-        df.to_csv(filepath, index=False)
+        folder = CSV_DIR
+        filepath = os.path.join(folder, filename)
+        pd.DataFrame(data).to_csv(filepath, index=False)
     elif format_type == 'xlsx':
-        df.to_excel(filepath, index=False)
+        folder = XLSX_DIR
+        filepath = os.path.join(folder, filename)
+        pd.DataFrame(data).to_excel(filepath, index=False)
     elif format_type == 'pdf':
+        folder = PDF_DIR
+        filepath = os.path.join(folder, filename)
+
         pdf_buffer = io.BytesIO()
         p = canvas.Canvas(pdf_buffer, pagesize=letter)
         p.drawString(100, 750, f"Données pour : {team_name if team_name != 'all' else 'Toutes les équipes'}")
 
         y = 730
-        for _, row in df.iterrows():
+        for _, row in pd.DataFrame(data).iterrows():
             p.drawString(100, y, f"{row.to_dict()}")
             y -= 20
             if y < 50:
@@ -99,6 +170,7 @@ def download():
                 y = 750
 
         p.save()
+
         with open(filepath, 'wb') as f:
             f.write(pdf_buffer.getvalue())
 

@@ -18,20 +18,56 @@ document.getElementById('showAll').addEventListener('click', function() {
     fetchData("", currentPage);
 });
 
-// Gestion des boutons de téléchargement
-document.getElementById('downloadCSV').addEventListener('click', () => downloadFile('csv'));
-document.getElementById('downloadExcel').addEventListener('click', () => downloadFile('xlsx'));
-document.getElementById('downloadPDF').addEventListener('click', () => downloadFile('pdf'));
+// Gestion du bouton de téléchargement
+document.getElementById('downloadFile').addEventListener('click', () => {
+    const format = document.getElementById('fileFormat').value;
+    downloadFile(format);
+});
+
+function downloadFile(format) {
+    const teamName = document.getElementById('teamName').value;
+    const downloadName = teamName ? teamName : 'all';
+
+    fetch(`/download?teamName=${encodeURIComponent(downloadName)}&format=${format}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                displayMessage(data.message);
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+}
+
 
 // Fonction pour télécharger les données dans un format spécifique
 function downloadFile(format) {
     const teamName = document.getElementById('teamName').value;
     const downloadName = teamName ? teamName : 'all';
 
-    console.log(`Téléchargement des données en ${format.toUpperCase()} pour :`, downloadName);
+    fetch(`/download?teamName=${encodeURIComponent(downloadName)}&format=${format}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                displayMessage(data.message);
+            }
+        })
+        .catch(error => console.error('Erreur:', error));
+}
 
-    // Rediriger vers la route de téléchargement
-    window.location.href = `/download?teamName=${encodeURIComponent(downloadName)}&format=${format}`;
+function displayMessage(text) {
+    const messageDiv = document.getElementById("message");
+    messageDiv.innerText = text;
+    messageDiv.style.display = "block";
+    messageDiv.style.backgroundColor = "#d4edda";
+    messageDiv.style.color = "#155724";
+    messageDiv.style.padding = "10px";
+    messageDiv.style.margin = "10px 0";
+    messageDiv.style.border = "1px solid #c3e6cb";
+    messageDiv.style.borderRadius = "5px";
+
+    setTimeout(() => {
+        messageDiv.style.display = "none";
+    }, 5000); // Cache le message après 5 secondes
 }
 
 // Fonction pour récupérer les données avec pagination

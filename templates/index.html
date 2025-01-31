@@ -5,11 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recherche d'équipe de hockey</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylenavbar.css') }}">
     <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
 <body>
+    {% include 'navbar.html' %}
+    
     <div class="container">
         <h1>Rechercher une équipe de hockey</h1>
+        
+        <!-- Ajout de la zone de message -->
+        <div id="message" class="message"></div>
         <form id="searchForm" class="search-form">
             <label for="teamName">Nom de l'équipe :</label>
             <input type="text" id="teamName" name="teamName" required>
@@ -18,10 +24,14 @@
                 <button type="button" id="showAll" class="btn btn-secondary">Afficher toutes les équipes</button>
             </div>
             <div class="button-group">
-                <button type="button" id="downloadCSV" class="btn btn-download">Télécharger en CSV</button>
-                <button type="button" id="downloadExcel" class="btn btn-download">Télécharger en Excel</button>
-                <button type="button" id="downloadPDF" class="btn btn-download">Télécharger en PDF</button>
-            </div>
+                <label for="fileFormat">Format du fichier :</label>
+                <select id="fileFormat" class="select-format">
+                    <option value="csv">CSV</option>
+                    <option value="xlsx">Excel</option>
+                    <option value="pdf">PDF</option>
+                </select>
+                <button type="button" id="downloadFile" class="btn btn-download">Télécharger</button>
+            </div>                      
         </form>
 
         <div id="results" class="results-container">

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisation des données</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylesdata.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='stylenavbar.css') }}">
+</head>
+<body>
+    {% include 'navbar.html' %} <!-- Inclure la barre de navigation si nécessaire -->
+
+    <div class="container">
+        <h1>Visualisation des données</h1>
+        <form method="POST">
+            <button type="submit">Afficher les graphiques</button>
+        </form>
+
+        {% if boxplot_victories %}
+            <h2>Boxplot des victoires par équipe</h2>
+            <img src="data:image/png;base64,{{ boxplot_victories }}" alt="Boxplot des victoires">
+        {% endif %}
+
+        {% if heatmap_performance %}
+            <h2>Heatmap des performances moyennes par année</h2>
+            <img src="data:image/png;base64,{{ heatmap_performance }}" alt="Heatmap des performances">
+        {% endif %}
+
+        {% if scatter_plot %}
+            <h2>Scatter plot entre buts marqués et pourcentage de victoires</h2>
+            <img src="data:image/png;base64,{{ scatter_plot }}" alt="Scatter plot">
+        {% endif %}
+
+        {% if performance_distribution %}
+            <h2>Distribution des victoires des équipes</h2>
+            <img src="data:image/png;base64,{{ performance_distribution }}" alt="Distribution des victoires">
+        {% endif %}
+    </div>
+</body>
+</html>
